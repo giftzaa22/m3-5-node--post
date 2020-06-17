@@ -34,8 +34,51 @@ const newData = (req, res) => {
   todoList.push(item);
   res.redirect("/");
 };
+//ex 2
+let names = [];
+let addresses = [];
+let { stock, customers } = require("./data/promo");
+//existing customers are pushed into arrays so that they cannot be on free gift list
+customers.forEach((customer) => {
+  names.push(`${customer.givenName} ${customer.surname}`);
+  addresses.push(customer.address);
+});
+app.post("/order", (req, res) => {
+  console.log(req.body);
+  const data = req.body;
+  //this data above is declared so that belwo once it is again taken as data no second gift possible
+  if (
+    names.includes(`${data.givenName} ${data.surname}`) ||
+    addresses.includes(data.address)
+  ) {
+    res.status(500).json({ status: "error", error: "repeat-customer" });
+    return;
+  }
+  if (data.country != "Canada") {
+    res.status(500).json({ status: "error", error: "undeliverable" });
+    return;
+  }
+  if (data.order === "shirt") {
+    let shirtStock = stock.shirt[data.size];
+    shirtStock = parseInt(shirtStock);
+    if (shirtStock <= 0) {
+      res.status(500).json({ status: "error", error: "unavailable" });
+      return;
+    }
+  }
+  let productStock = stock[data.order];
+  productStock = parseInt(productStock);
+  if (productStock <= 0) {
+    res.status(500).json({ status: "error", error: "unavailable" });
+    return;
+  }
+  names.push(`${data.givenName} ${data.surname}`);
+  addresses.push(data.address);
+  res.status(200).json({ status: "success" });
+});
 app.get("/", todos);
 // create an endpoint called `/data` to receive the data from the form `post
 app.post("/form-data", newData);
 app.get("*", (req, res) => res.send("Dang. 404."));
 app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
+
